@@ -105,8 +105,10 @@ class ConnectionServer {
     // timeout.
     connection.incomingStreams.listen((stream) {
       handler = serveStream_(stream);
-    }, onError: (error) {
-      print('Connection error: $error');
+    }, onError: (error, stackTrace) {
+      if (error is Error) {
+        Zone.current.handleUncaughtError(error, stackTrace);
+      }
     }, onDone: () {
       // TODO(sigurdm): This is not correct behavior in the presence of
       // half-closed tcp streams.
@@ -143,6 +145,11 @@ class Server extends ConnectionServer {
     return null;
   }
 
+  Service lookupService(String service) => _services[service];
+
+  /// Starts the [Server] with the given options.
+  /// [address] can be either a [String] or an [InternetAddress], in the latter
+  /// case it can be a Unix Domain Socket address.
   Future<void> serve(
       {dynamic address,
       int port,
@@ -171,15 +178,17 @@ class Server extends ConnectionServer {
     }
     server.listen((socket) {
       // Don't wait for io buffers to fill up before sending requests.
-      socket.setOption(SocketOption.tcpNoDelay, true);
+      if (socket.address.type != InternetAddressType.unix) {
+        socket.setOption(SocketOption.tcpNoDelay, true);
+      }
       final connection = ServerTransportConnection.viaSocket(socket,
           settings: http2ServerSettings);
       serveConnection(connection);
-    }, onError: _printSocketError);
-  }
-
-  void _printSocketError(Object error) {
-    print('Socket error: $error');
+    }, onError: (error, stackTrace) {
+      if (error is Error) {
+        Zone.current.handleUncaughtError(error, stackTrace);
+      }
+    });
   }
 
   @visibleForTesting

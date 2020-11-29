@@ -25,4 +25,6 @@ export 'src/client/web_channel.dart' show GrpcWebClientChannel;
 
 export 'src/client/websocket_channel.dart' show WebSocketClientChannel;
 
+export 'src/shared/profiler.dart' show isTimelineLoggingEnabled;
+
 export 'src/shared/status.dart' show StatusCode, GrpcError;
